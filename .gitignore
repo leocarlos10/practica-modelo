@@ -4,3 +4,6 @@ env/
 .venv*
 venv*
 env*
+
+#Modelo 
+modelo_vino_pipeline_v1.pkl
