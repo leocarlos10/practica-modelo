@@ -1,315 +1,313 @@
-# Metricas de calidad para modelos de clasificacion
+# Teoría de Métricas de Calidad en Clasificación
 
-Este documento explica que son las metricas de calidad en clasificacion y como aplicarlas al modelo de practica (Gradient Boosting con vinos).
+## Introducción
 
-## 1. Que son las metricas de calidad
+Las métricas de calidad son medidas numéricas fundamentales para evaluar el desempeño de un modelo de clasificación. A diferencia del **accuracy** (exactitud), que puede ser engañoso cuando las clases están desbalanceadas, estas métricas proporcionan una visión más completa y confiable del rendimiento real del modelo.
 
-Las metricas de calidad son medidas numericas para evaluar que tan bien clasifica un modelo.
+### Matriz de Confusión: Conceptos Base
 
-No basta con usar solo `accuracy` porque puede ocultar errores importantes, sobre todo cuando hay clases desbalanceadas.
+Antes de profundizar en cada métrica, es esencial entender los cuatro conceptos fundamentales que forman la base de todas las métricas:
 
-## 2. Conceptos base
+- **TP (True Positives - Verdaderos Positivos)**: El modelo predijo la clase positiva (1) y efectivamente era positiva.
+- **TN (True Negatives - Verdaderos Negativos)**: El modelo predijo la clase negativa (0) y efectivamente era negativa.
+- **FP (False Positives - Falsos Positivos)**: El modelo predijo la clase positiva (1) pero era negativa.
+- **FN (False Negatives - Falsos Negativos)**: El modelo predijo la clase negativa (0) pero era positiva.
 
-En clasificacion binaria:
+Estos cuatro valores forman una tabla llamada **matriz de confusión**:
 
-- Clase `0`: baja calidad
-- Clase `1`: alta calidad
-
-Resultados posibles:
-
-- `TP` (True Positive): predijo 1 y era 1
-- `TN` (True Negative): predijo 0 y era 0
-- `FP` (False Positive): predijo 1 pero era 0
-- `FN` (False Negative): predijo 0 pero era 1
-
-## 3. Metricas principales
-
-### 3.1 Accuracy (Exactitud)
-
-Proporcion total de predicciones correctas.
-
-Formula:
-
-`(TP + TN) / (TP + TN + FP + FN)`
-
-Uso: da una idea general, pero puede ser enganosa con desbalance.
-
-### 3.2 Precision (Precision)
-
-De todo lo que el modelo predijo como clase positiva (1), cuanto era realmente positivo.
-
-Formula:
-
-`TP / (TP + FP)`
-
-Uso: importante cuando quieres evitar falsos positivos.
-
-### 3.3 Recall (Sensibilidad)
-
-De todos los positivos reales (1), cuantos detecto el modelo.
-
-Formula:
-
-`TP / (TP + FN)`
-
-Uso: importante cuando quieres evitar perder casos positivos.
-
-### 3.4 F1-Score
-
-Media armonica entre precision y recall.
-
-Formula:
-
-`2 * (Precision * Recall) / (Precision + Recall)`
-
-Uso: recomendada cuando hay desbalance porque combina ambos criterios.
-
-### 3.5 ROC-AUC
-
-Mide la capacidad del modelo para separar clases usando probabilidades.
-
-Rango:
-
-- `0.5`: similar a azar
-- `1.0`: separacion perfecta
-
-Uso: comparacion robusta entre modelos binarios.
-
-### 3.6 Matriz de confusion
-
-Tabla con conteos de TP, TN, FP y FN. Permite ver claramente en que tipo de error falla el modelo.
-
-## 4. Ejemplo practico (idea intuitiva)
-
-Supongamos 100 vinos:
-
-- 70 son clase 0 (baja calidad)
-- 30 son clase 1 (alta calidad)
-
-Si un modelo predice todo como clase 0:
-
-- Accuracy = 70%
-- Recall para clase 1 = 0%
-
-Conclusión: parece bueno por accuracy, pero en realidad no detecta ningun vino de alta calidad.
-
-## 5. Implementacion en este proyecto
-
-En el notebook se agrego una celda con:
-
-- `accuracy_score`
-- `precision_score`
-- `recall_score`
-- `f1_score`
-- `roc_auc_score`
-- `confusion_matrix`
-- `classification_report`
-- grafica de matriz de confusion con `ConfusionMatrixDisplay`
-
-Codigo de referencia:
-
-```python
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    confusion_matrix,
-    classification_report,
-    ConfusionMatrixDisplay,
-)
-import matplotlib.pyplot as plt
-
-y_pred = model.predict(x_test)
-y_proba = model.predict_proba(x_test)[:, 1]
-
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred)
-recall = recall_score(y_test, y_pred)
-f1 = f1_score(y_test, y_pred)
-roc_auc = roc_auc_score(y_test, y_proba)
-
-print(f"Accuracy : {accuracy:.3f}")
-print(f"Precision: {precision:.3f}")
-print(f"Recall   : {recall:.3f}")
-print(f"F1-Score : {f1:.3f}")
-print(f"ROC-AUC  : {roc_auc:.3f}")
-
-cm = confusion_matrix(y_test, y_pred)
-print(cm)
-print(classification_report(y_test, y_pred, target_names=["Baja calidad (0)", "Alta calidad (1)"]))
-
-ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Baja", "Alta"]).plot(cmap="Blues")
-plt.title("Matriz de confusion - Gradient Boosting")
-plt.show()
+```
+                Predicción Positiva    Predicción Negativa
+Clase Real 1         TP                      FN
+Clase Real 0         FP                      TN
 ```
 
-## 6. Explicacion detallada linea por linea del codigo
+---
 
-En esta seccion se explica cada linea del bloque de metricas para entender exactamente que hace, que recibe y que devuelve.
+## 1. Accuracy (Exactitud)
 
-### 6.1 Importacion de funciones
+### Definición
 
-```python
-from sklearn.metrics import (
-        accuracy_score,
-        precision_score,
-        recall_score,
-        f1_score,
-        roc_auc_score,
-        confusion_matrix,
-        classification_report,
-        ConfusionMatrixDisplay,
-)
-import matplotlib.pyplot as plt
+La exactitud es la proporción total de predicciones correctas respecto al total de muestras. Es la métrica más intuitiva, pero puede ser engañosa cuando hay desbalance de clases.
+
+### Fórmula
+
+$$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}$$
+
+### Interpretación
+
+- **Rango**: 0 a 1 (o 0% a 100%)
+- **Interpretación**: Porcentaje general de predicciones correctas
+- **Ejemplo**: Si accuracy = 0.92, significa que el modelo acertó el 92% de sus predicciones
+
+### Cuándo Usarla
+
+- ✅ Cuando las clases están balanceadas
+- ✅ Para obtener una visión general rápida
+- ❌ Cuando hay desbalance significativo de clases
+- ❌ Cuando los costos de error varían según el tipo
+
+### Limitación Importante
+
+**Ejemplo del problema**: Supón que tienes 100 vinos, de los cuales 95 son de baja calidad y 5 de alta calidad. Si tu modelo simplemente predice "baja calidad" para todo:
+- Accuracy = 95/100 = 95% ✓ (parece excelente)
+- Pero detecta 0 vinos de alta calidad (FRACASO total para la clase relevante)
+
+---
+
+## 2. Precision (Precisión)
+
+### Definición
+
+La precisión responde a la pregunta: **"De todo lo que el modelo predijo como positivo, cuánto era realmente positivo?"** Mide la confiabilidad de las predicciones positivas.
+
+### Fórmula
+
+$$\text{Precision} = \frac{TP}{TP + FP}$$
+
+### Interpretación
+
+- **Rango**: 0 a 1
+- **Interpretación**: De cada 10 predicciones positivas, ¿cuántas son correctas?
+- **Ejemplo**: Si precision = 0.85, significa que el 85% de los vinos que predijo como "alta calidad" realmente lo son
+
+### Cuándo Usarla
+
+- ✅ Cuando quieres **evitar falsos positivos** (errores costosos)
+- ✅ En detección de spam: No quieres marcar emails válidos como spam
+- ✅ En diagnóstico de enfermedades graves: No quieres alarmar falsamente al paciente
+- ✅ En sistemas de crédito: No quieres aprobar a clientes malos
+
+### Ejemplo Práctico
+
+Si un banco usa un modelo para detectar fraude:
+- Precision alta = Pocas alertas falsas (menos clientes molestos)
+- Precision baja = Muchas alertas falsas (pérdida de confianza de clientes)
+
+---
+
+## 3. Recall (Sensibilidad/Cobertura)
+
+### Definición
+
+El recall responde a: **"De todos los casos positivos reales, cuántos detectó el modelo?"** Mide la capacidad de no pasar por alto los casos positivos.
+
+### Fórmula
+
+$$\text{Recall} = \frac{TP}{TP + FN}$$
+
+### Interpretación
+
+- **Rango**: 0 a 1
+- **Interpretación**: ¿Qué porcentaje de los positivos reales logró detectar?
+- **Ejemplo**: Si recall = 0.90, significa que el modelo detectó el 90% de los vinos de alta calidad
+
+### Cuándo Usarla
+
+- ✅ Cuando quieres **evitar falsos negativos** (ignorar casos positivos importantes)
+- ✅ En detección de enfermedades: No quieres dejar pasar pacientes enfermos
+- ✅ En control de calidad: No quieres que pasen productos defectuosos
+- ✅ En búsqueda y rescate: No puedes dejar de encontrar a alguien
+
+### Ejemplo Práctico
+
+Si un hospital usa un modelo para diagnosticar cáncer:
+- Recall alto = Detecta casi todos los casos de cáncer (pocos falsos negativos)
+- Recall bajo = Deja pasar muchos casos de cáncer (PELIGROSO)
+
+---
+
+## 4. Trade-off Precision vs Recall
+
+### El Dilema
+
+Es frecuente que aumentar precision disminuya recall y viceversa. Esto es porque:
+
+- **Aumentar umbral de confianza**: Detecta menos positivos (recall ↓) pero los que detecta son más confiables (precision ↑)
+- **Disminuir umbral de confianza**: Detecta más positivos (recall ↑) pero comete más errores (precision ↓)
+
+### Visualización Mental
+
+```
+Modelo Conservador (Precision ↑, Recall ↓):
+- Solo predice "positivo" si está muy seguro
+- Pocos falsos positivos, muchos falsos negativos
+
+Modelo Agresivo (Recall ↑, Precision ↓):
+- Predice "positivo" fácilmente
+- Muchos falsos positivos, pocos falsos negativos
 ```
 
-- `from sklearn.metrics import (...)`:
-    importa desde `scikit-learn` todas las funciones de evaluacion que usaras para clasificacion.
-- `accuracy_score`:
-    calcula el porcentaje de aciertos globales.
-- `precision_score`:
-    mide que tan confiables son las predicciones positivas (clase 1).
-- `recall_score`:
-    mide cuantas instancias positivas reales detecta el modelo.
-- `f1_score`:
-    combina precision y recall en un solo valor balanceado.
-- `roc_auc_score`:
-    mide capacidad de separacion entre clases usando probabilidades.
-- `confusion_matrix`:
-    construye la tabla de conteos TN, FP, FN, TP.
-- `classification_report`:
-    genera un resumen de precision/recall/f1/soporte por clase.
-- `ConfusionMatrixDisplay`:
-    herramienta para graficar la matriz de confusion.
-- `import matplotlib.pyplot as plt`:
-    importa la libreria de graficos para mostrar la matriz visualmente.
+---
 
-### 6.2 Generar predicciones y probabilidades
+## 5. F1-Score
 
-```python
-y_pred = model.predict(x_test)
-y_proba = model.predict_proba(x_test)[:, 1]
+### Definición
+
+El F1-Score es la **media armónica** entre precision y recall. Es una métrica que combina ambas métricas en un único valor balanceado, diseñada específicamente para penalizar a modelos que son excelentes en una métrica pero desastrosos en la otra.
+
+#### ¿Por qué es importante?
+
+Imagina dos modelos extremos:
+
+**Modelo A (Conservador):**
+- Precision = 95% (cuando predice positivo, acierta el 95% de las veces)
+- Recall = 5% (pero solo detecta el 5% de los casos positivos reales)
+- **¿Vale la pena?** NO. De qué sirve estar 95% seguro si solo detectas 1 de cada 20 casos positivos
+
+**Modelo B (Agresivo):**
+- Precision = 5% (cuando predice positivo, acierta solo el 5% de las veces)
+- Recall = 95% (detecta el 95% de los casos positivos reales)
+- **¿Vale la pena?** NO. Detectas casi todo, pero generas 95 falsas alarmas por cada 100 predicciones positivas
+
+**F1-Score penaliza fuertemente ambos casos** porque:
+
+1. **No puedes sacrificar una métrica por otra**: A diferencia de usar precision O recall por separado, F1-Score te obliga a tener un buen desempeño en AMBAS. Un modelo verdaderamente bueno debe tener AMBAS métricas altas.
+
+2. **Penaliza desproporcionadamente el desbalance extremo**: Si una métrica es muy alta y la otra muy baja, F1-Score baja significativamente, alertándote de que tu modelo tiene un "punto débil fatal". Por ejemplo, con Precision = 1.0 (perfecto) pero Recall = 0.1 (terrible), F1-Score = 0.18 (muy bajo), te dice claramente: "algo anda muy mal".
+
+3. **Ideal cuando los errores tienen costos similares**: F1-Score es mejor cuando tanto los falsos positivos como los falsos negativos son igualmente problemáticos. Si uno cuesta significativamente más que el otro, deberías usar una métrica diferente o ajustar manualmente los pesos en el modelo.
+
+#### Ejemplo Numérico: Cómo F1-Score Castiga la Debilidad
+
+Compara estos 4 modelos:
+
+| Modelo | Precision | Recall | Media Aritmética | **F1-Score** | ¿Cuál es mejor? |
+|--------|-----------|--------|------------------|-----|---|
+| **Modelo 1** (Equilibrado) | 80% | 80% | 80% | **80%** | ✅ BUENO - Ambas métricas altas |
+| **Modelo 2** (Conservador) | 95% | 10% | 52.5% | **17.8%** | ❌ MALO - La media aritmética oculta el desastre |
+| **Modelo 3** (Agresivo) | 10% | 95% | 52.5% | **17.8%** | ❌ MALO - Igual problema |
+| **Modelo 4** (Mediocre) | 50% | 50% | 50% | **50%** | ⚠️ PEOR - Verdaderamente mediocre |
+
+**Lo crucial:** Observa los Modelos 2 y 3. La media aritmética = 52.5%, mientras que **F1-Score = 17.8%**. F1-Score "castiga" mucho más fuertemente porque dice: *"No importa si eres perfecto en un lado si fracasas completamente en el otro"*.
+
+**En resumen:** F1-Score es un **"árbitro justo"** que no permite que un modelo escape de su debilidad siendo excelente en otra parte. Obliga al modelo a ser "redondo" (bueno en ambas dimensiones). **Si tu Precision y Recall no están cercanos, tu F1-Score será bajo, alertándote del problema.**
+
+### Fórmula
+
+$$\text{F1-Score} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
+
+También puede expresarse como:
+
+$$\text{F1-Score} = \frac{2 \times TP}{2 \times TP + FP + FN}$$
+
+### ¿Por qué "Media Armónica"?
+
+La media armónica es más restrictiva que la media aritmética. Penaliza desproporcionadamente cuando una métrica es muy baja:
+
+- Si Precision = 1.0 y Recall = 0.1:
+  - Media aritmética = (1.0 + 0.1) / 2 = 0.55
+  - F1-Score = 2 × (1.0 × 0.1) / (1.0 + 0.1) = **0.18** (mucho más bajo)
+
+### Interpretación
+
+- **Rango**: 0 a 1
+- **Interpretación**: Balance general entre precision y recall
+- **Ejemplo**: Si F1 = 0.82, indica un buen equilibrio entre detectar positivos y confiar en esas detecciones
+
+### Cuándo Usarla
+
+- ✅ **Recomendada cuando hay desbalance de clases**
+- ✅ Cuando necesitas un balance entre precision y recall
+- ✅ Cuando quieres un único número para comparar modelos
+- ✅ En problemas donde falsos positivos y falsos negativos tienen costo similar
+
+---
+
+## 6. ROC-AUC (Receiver Operating Characteristic - Area Under the Curve)
+
+### Definición
+
+ROC-AUC mide la **capacidad del modelo para separar las dos clases** variando el umbral de decisión. El AUC es el área bajo la curva ROC, que va de 0 a 1.
+
+### ¿Cómo se calcula?
+
+La curva ROC grafica:
+- **Eje X (FPR)**: Tasa de Falsos Positivos = $\frac{FP}{FP + TN}$ (¿Cuántos negativos clasificó mal?)
+- **Eje Y (TPR)**: Tasa de Verdaderos Positivos = $\frac{TP}{TP + FN}$ (= Recall, ¿Cuántos positivos detectó?)
+
+La curva se genera variando el umbral de decisión de 0 a 1, y el AUC es el área bajo esa curva.
+
+### Fórmula del AUC
+
+$$\text{AUC} = \int_0^1 \text{TPR}(t) \, dt$$
+
+donde $t$ es el umbral de decisión.
+
+### Interpretación
+
+| AUC | Significado |
+|-----|-------------|
+| 0.5 | El modelo es **tan bueno como lanzar una moneda** (no separación) |
+| 0.7 - 0.8 | **Discriminación aceptable** |
+| 0.8 - 0.9 | **Discriminación excelente** |
+| 0.9 - 1.0 | **Discriminación extraordinaria** |
+| 1.0 | **Separación perfecta** (caso ideal) |
+
+### Ventajas
+
+- ✅ **Insensible al desbalance de clases**: No se ve afectado por proporción de clases
+- ✅ **Evalúa probabilidades**: Usa `predict_proba`, no solo predicciones discretas
+- ✅ **Comparación robusta**: Excelente para comparar diferentes modelos
+- ✅ **Resumen único**: Un solo número que resume la performance completa
+
+### Caso de Uso
+
+Es la métrica más robusta para comparar modelos binarios, especialmente con datos desbalanceados.
+
+---
+
+## 7. Matriz de Confusión (Confusion Matrix)
+
+### Definición
+
+La matriz de confusión es una **tabla que presenta visualmente todos los tipos de predicciones**. Con ella puedes ver exactamente dónde y cómo falla el modelo.
+
+### Estructura de la Matriz
+
+Para clasificación binaria:
+
+$$\begin{bmatrix} 
+TN & FP \\
+FN & TP 
+\end{bmatrix}$$
+
+O de forma más descriptiva:
+
+```
+                        Predicción = 0    Predicción = 1
+Valor Real = 0              TN                FP
+Valor Real = 1              FN                TP
 ```
 
-- `model.predict(x_test)`:
-    devuelve una prediccion discreta por muestra (`0` o `1`).
-    `y_pred` tiene el mismo largo que `y_test`.
-- `model.predict_proba(x_test)`:
-    devuelve probabilidades por clase en una matriz de 2 columnas: `[P(clase 0), P(clase 1)]`.
-- `[:, 1]`:
-    selecciona solo la columna de probabilidad de la clase positiva (`1`, alta calidad).
-    este vector es necesario para ROC-AUC.
+### Ejemplo Numérico
 
-### 6.3 Calcular las metricas
+Supón que evaluaste 200 vinos:
 
-```python
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred)
-recall = recall_score(y_test, y_pred)
-f1 = f1_score(y_test, y_pred)
-roc_auc = roc_auc_score(y_test, y_proba)
+```
+                        Predijo Baja (0)    Predijo Alta (1)
+Realmente Baja (0)          125                 15
+Realmente Alta (1)           8                  52
 ```
 
-- `accuracy_score(y_test, y_pred)`:
-    compara valor real vs predicho y calcula fraccion de aciertos.
-    rango: `0` a `1`.
-- `precision_score(y_test, y_pred)`:
-    usa TP y FP para responder: "de lo que predije como 1, cuanto era realmente 1".
-- `recall_score(y_test, y_pred)`:
-    usa TP y FN para responder: "de todos los 1 reales, cuantos encontre".
-- `f1_score(y_test, y_pred)`:
-    media armonica de precision y recall.
-    penaliza cuando una de las dos es baja.
-- `roc_auc_score(y_test, y_proba)`:
-    requiere probabilidades (no etiquetas 0/1).
-    mide que tan bien ordena positivos por encima de negativos en distintos umbrales.
+**Interpretación**:
+- **TN = 125**: 125 vinos de baja calidad correctamente identificados
+- **FP = 15**: 15 vinos de baja calidad incorrectamente etiquetados como alta (error tipo 1)
+- **FN = 8**: 8 vinos de alta calidad no detectados (error tipo 2)
+- **TP = 52**: 52 vinos de alta calidad correctamente detectados
 
-### 6.4 Mostrar resultados por consola
+### Cálculo de métricas a partir de la matriz
 
-```python
-print(f"Accuracy : {accuracy:.3f}")
-print(f"Precision: {precision:.3f}")
-print(f"Recall   : {recall:.3f}")
-print(f"F1-Score : {f1:.3f}")
-print(f"ROC-AUC  : {roc_auc:.3f}")
-```
+$$\text{Accuracy} = \frac{125 + 52}{200} = 88.5\%$$
 
-- cada `print(...)` muestra la metrica ya calculada.
-- `f"...{variable:.3f}"`:
-    formatea el numero con 3 decimales.
-    ejemplo: `0.81234` se muestra como `0.812`.
-- si quieres porcentaje, puedes usar `*100` y agregar `%`.
-    ejemplo: `print(f"Accuracy : {accuracy*100:.2f}%")`.
+$$\text{Precision} = \frac{52}{52 + 15} = 77.6\%$$
 
-### 6.5 Matriz de confusion (valores exactos de aciertos/errores)
+$$\text{Recall} = \frac{52}{52 + 8} = 86.7\%$$
 
-```python
-cm = confusion_matrix(y_test, y_pred)
-print(cm)
-```
+$$\text{F1-Score} = 2 \times \frac{0.776 \times 0.867}{0.776 + 0.867} = 81.9\%$$
 
-- `confusion_matrix(y_test, y_pred)`:
-    construye matriz `2x2` (binaria) con estructura:
+### Ventajas de la Matriz de Confusión
 
-    `[[TN, FP],`
-    ` [FN, TP]]`
-
-- `print(cm)`:
-    imprime los conteos reales para analizar en que se equivoca el modelo.
-
-### 6.6 Reporte detallado por clase
-
-```python
-print(classification_report(y_test, y_pred, target_names=["Baja calidad (0)", "Alta calidad (1)"]))
-```
-
-- `classification_report(...)`:
-    genera tabla con precision, recall, f1-score y soporte para cada clase.
-- `target_names=[...]`:
-    reemplaza etiquetas numericas (`0`, `1`) por nombres legibles.
-- `support` en el reporte:
-    indica cuantas muestras reales hay de cada clase en `y_test`.
-
-### 6.7 Grafica de matriz de confusion
-
-```python
-ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Baja", "Alta"]).plot(cmap="Blues")
-plt.title("Matriz de confusion - Gradient Boosting")
-plt.show()
-```
-
-- `ConfusionMatrixDisplay(...).plot(...)`:
-    dibuja la matriz como mapa de calor.
-- `display_labels=["Baja", "Alta"]`:
-    etiquetas visuales para filas/columnas.
-- `cmap="Blues"`:
-    define paleta de colores (mas oscuro = mayor conteo).
-- `plt.title(...)`:
-    agrega titulo a la figura.
-- `plt.show()`:
-    renderiza el grafico en el notebook.
-
-### 6.8 Resumen de flujo completo
-
-1. el modelo predice etiquetas (`y_pred`) y probabilidades (`y_proba`).
-2. con etiquetas calculas accuracy, precision, recall y f1.
-3. con probabilidades calculas ROC-AUC.
-4. con etiquetas construyes matriz de confusion y reporte por clase.
-5. finalmente visualizas la matriz para interpretar errores rapidamente.
-
-### 6.9 Errores comunes y como evitarlos
-
-- usar `roc_auc_score(y_test, y_pred)` en vez de probabilidades:
-    funciona, pero pierde informacion. mejor `y_proba`.
-- confusion de orden en argumentos:
-    siempre usa `metrica(y_real, y_pred)`.
-- interpretar mal la matriz:
-    recuerda formato `[[TN, FP], [FN, TP]]`.
-- mezclar escalas en informe:
-    decide si reportas en `0-1` o en `%` y mantenlo consistente.
-
-
-
-
+- ✅ **Visualización clara**: Ves exactamente qué tipos de errores comete
+- ✅ **Base para otras métricas**: Todas las métricas se derivan de ella
+- ✅ **Análisis profundo**: Puedes detectar patrones de error
+- ✅ **Comunicación**: Fácil de explicar a stakeholders
